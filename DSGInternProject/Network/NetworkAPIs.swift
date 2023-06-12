@@ -75,9 +75,55 @@ class NetworkManager: ObservableObject {
     
     private var cancellables = Set<AnyCancellable>()
     
-    func checkForUpdates() {
-        let currentVersion = UIApplication.appVersion ?? ""
+    func compareAppVersions(storeVersion: String, currentVersion: String) -> ComparisonResult {
+        let components1 = storeVersion.components(separatedBy: ".")
+        let components2 = currentVersion.components(separatedBy: ".")
+        
+        // Determine the minimum length between the two version component arrays
+        let minLength = min(components1.count, components2.count)
+        
+        // Iterate through the common components and compare them
+        for i in 0..<minLength {
+            let component1 = Int(components1[i]) ?? 0
+            let component2 = Int(components2[i]) ?? 0
+            
+            if component1 < component2 {
+                return .orderedAscending
+            } else if component1 > component2 {
+                return .orderedDescending
+            }
+        }
+        
+        // If the common components are equal, but one version has more components,
+        // the version with more components as the newer version. case-> 5.2 and 5.2.3
+        if components1.count < components2.count {
+            return .orderedAscending
+        } else if components1.count > components2.count {
+            return .orderedDescending
+        }
+        
+        // If all components are equal, the versions are the same.
+        return .orderedSame
+    }
+
+    
+    
+    func checkForUpdates(){
+        let currentVersion = "5.3.12" //UIApplication.appVersion ?? ""
             isUpdateAvailable = currentVersion != version
+        
+        let result = compareAppVersions(storeVersion: version, currentVersion: currentVersion)
+
+        switch result {
+        case .orderedAscending:
+            print("\(version) is older than \(currentVersion)")
+        case .orderedDescending:
+            print("\(version) is newer than \(currentVersion)")
+            isUpdateAvailable = true
+        case .orderedSame:
+            print("\(version) and \(currentVersion) are the same")
+        }
+        
         }
         
         func dismissUpdate() {
